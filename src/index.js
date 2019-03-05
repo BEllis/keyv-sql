@@ -91,6 +91,7 @@ class KeyvSql extends EventEmitter {
 		    ).toString();
 			}
 
+			console.log(upsert);
 			return this.query(upsert).then(rows => {
 				console.info(rows);
 				const row = rows[0];
