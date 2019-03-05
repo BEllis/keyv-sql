@@ -86,9 +86,11 @@ class KeyvSql extends EventEmitter {
 		      this.entry.key.equals(key).and(this.entry.value.equals(serializedOriginalValue))
 		    ).toString();
 			} else {
-				upsert = this.entry.replace({ key, value: serializedValue }).where(
+				upsert = `REPLACE INTO "keyv" ("key", "value") SELECT ('${key}', '${serializedValue}') FROM "keyv" WHERE (("keyv"."key" = '${key}') AND ("keyv"."value" = '${serializedOriginalValue}'))`;
+				/*
+				upsert = this.entry.replace({ key, value: serializedValue }).select().where(
 		      this.entry.key.equals(key).and(this.entry.value.equals(serializedOriginalValue))
-		    ).toString();
+		    ).toString(); */
 			}
 
 			console.log(upsert);
