@@ -82,11 +82,11 @@ class KeyvSql extends EventEmitter {
 				serializedValue = serializedValue.replace(/\\/g, '\\\\');
 			}
 			if (this.opts.dialect === 'postgres') {
-				upsert = this.entry.insert({ key, serializedValue }).onConflict({ columns: ['key', 'value'], update: ['value'] }).where(
+				upsert = this.entry.insert({ key, value: serializedValue }).onConflict({ columns: ['key', 'value'], update: ['value'] }).where(
 		      this.entry.key.equals(key).and(this.entry.value.equals(serializedOriginalValue))
 		    ).toString();
 			} else {
-				upsert = this.entry.replace({ key, serializedValue }).where(
+				upsert = this.entry.replace({ key, value: serializedValue }).where(
 		      this.entry.key.equals(key).and(this.entry.value.equals(serializedOriginalValue))
 		    ).toString();
 			}
