@@ -92,7 +92,8 @@ class KeyvSql extends EventEmitter {
   UNION ALL
   SELECT '${key}', '${serializedValue}' FROM "keyv" WHERE (SELECT COUNT(*) FROM "keyv" WHERE "keyv"."key" = '${key}') = 0
   ) as subqry
-  LIMIT 1; SELECT changes();`
+  LIMIT 1;
+	SELECT changes()`
 				/*
 				upsert = this.entry.replace({ key, value: serializedValue }).select().where(
 		      this.entry.key.equals(key).and(this.entry.value.equals(serializedOriginalValue))
@@ -104,7 +105,7 @@ class KeyvSql extends EventEmitter {
 				console.info(rows);
 				const row = rows[0];
 				if (row === undefined && tries > 0) {
-					return setOptimisticly(key, deserialize, serialize, value, expires, ttl, tries);
+					return this.setOptimisticly(key, deserialize, serialize, value, expires, ttl, tries);
 				}
 
 				return row.value;
