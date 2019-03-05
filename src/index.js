@@ -90,7 +90,7 @@ class KeyvSql extends EventEmitter {
 				upsert = `REPLACE INTO "keyv" ("key", "value") SELECT * FROM (
   SELECT '${key}', '${serializedValue}' FROM "keyv" WHERE "keyv"."key" = '${key}' AND "keyv"."value" = '${serializedOriginalValue}'
   UNION ALL
-  SELECT '${key}', '${serializedValue}' FROM "keyv" WHERE (SELECT COUNT(*) FROM "keyv" WHERE id = '${key}') = 0
+  SELECT '${key}', '${serializedValue}' FROM "keyv" WHERE (SELECT COUNT(*) FROM "keyv" WHERE "keyv"."key" = '${key}') = 0
   ) as subqry
   LIMIT 1; SELECT changes();`
 				/*
