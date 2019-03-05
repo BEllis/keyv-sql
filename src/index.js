@@ -69,25 +69,24 @@ class KeyvSql extends EventEmitter {
 		tries--;
 
 		this.get(key).then(originalValue => {
-			const value = Object.assign({}, originalValue);
-			const newValue = value(value);
+			const newValue = value(Object.assign({}, originalValue));
 			const serializedOriginalValue = serialize(originalValue);
 			const serializedValue = serialize(newValue);
-			if (newValue == originalValue || serializedValue === serializedOriginalValue ) {
+			if (serializedValue === serializedOriginalValue ) {
 				// No changes
 				return;
 			}
 
 			let upsert;
 			if (this.opts.dialect === 'mysql') {
-				value = value.replace(/\\/g, '\\\\');
+				serializedValue = serializedValue.replace(/\\/g, '\\\\');
 			}
 			if (this.opts.dialect === 'postgres') {
-				upsert = this.entry.insert({ key, value }).onConflict({ columns: ['key', 'value'], update: ['value'] }).where(
+				upsert = this.entry.insert({ key, serializedValue }).onConflict({ columns: ['key', 'value'], update: ['value'] }).where(
 		      this.entry.key.equals(key).and(this.entry.value.equals(serializedOriginalValue))
 		    ).toString();
 			} else {
-				upsert = this.entry.replace({ key, value }).where(
+				upsert = this.entry.replace({ key, serializedValue }).where(
 		      this.entry.key.equals(key).and(this.entry.value.equals(serializedOriginalValue))
 		    ).toString();
 			}
