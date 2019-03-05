@@ -68,7 +68,7 @@ class KeyvSql extends EventEmitter {
 		tries = tries || 30;
 		tries--;
 
-		get(key).then(originalValue => {
+		this.get(key).then(originalValue => {
 			const value = Object.assign({}, originalValue);
 			const newValue = value(value);
 			const serializedOriginalValue = serialize(originalValue);
