@@ -64,6 +64,40 @@ class KeyvSql extends EventEmitter {
 		return this.query(upsert);
 	}
 
+	setOptimisticly(key, deserialize, serialize, value, expires, ttl, tries) {
+		if (tries == undefined) {
+			tries = 0;
+		}
+
+		tries++;
+
+		const originalValue = get(key);
+		const newValue = value(originalValue);
+
+		if (newValue == originalValue) {
+			// No changes
+			return;
+		}
+
+		let upsert;
+		if (this.opts.dialect === 'mysql') {
+			value = value.replace(/\\/g, '\\\\');
+		}
+		if (this.opts.dialect === 'postgres') {
+			upsert = this.entry.insert({ key, value }).onConflict({ columns: ['key', 'value'], update: ['value'] }).toString();
+		} else {
+			upsert = this.entry.replace({ key, value }).toString();
+		}
+		return this.query(upsert).then(rows => {
+			const row = rows[0];
+			if (row === undefined && tries < 30) {
+				return setOptimisticly(key, deserialize, serialize, value, expires, ttl, tries);
+			}
+
+			return row.value;
+		}););
+	}
+
 	delete(key) {
 		const select = this.entry.select().where({ key }).toString();
 		const del = this.entry.delete().where({ key }).toString();
