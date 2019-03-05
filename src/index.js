@@ -64,38 +64,44 @@ class KeyvSql extends EventEmitter {
 		return this.query(upsert);
 	}
 
-	setOptimisticly(key, deserialize, serialize, value, expires, ttl, tries) {
-		if (tries == undefined) {
-			tries = 0;
-		}
+	setOptimisticly(key, deserialize, serialize, value, tries) {
+		tries = tries || 30;
+		tries--;
 
-		tries++;
-
-		const originalValue = get(key);
-		const newValue = value(originalValue);
-
-		if (newValue == originalValue) {
-			// No changes
-			return;
-		}
-
-		let upsert;
-		if (this.opts.dialect === 'mysql') {
-			value = value.replace(/\\/g, '\\\\');
-		}
-		if (this.opts.dialect === 'postgres') {
-			upsert = this.entry.insert({ key, value }).onConflict({ columns: ['key', 'value'], update: ['value'] }).toString();
-		} else {
-			upsert = this.entry.replace({ key, value }).toString();
-		}
-		return this.query(upsert).then(rows => {
-			const row = rows[0];
-			if (row === undefined && tries < 30) {
-				return setOptimisticly(key, deserialize, serialize, value, expires, ttl, tries);
+		get(key).then(originalValue => {
+			const value = Object.assign({}, originalValue);
+			const newValue = value(value);
+			const serializedOriginalValue = serialize(originalValue);
+			const serializedValue = serialize(newValue);
+			if (newValue == originalValue || serializedValue === serializedOriginalValue ) {
+				// No changes
+				return;
 			}
 
-			return row.value;
-		}););
+			let upsert;
+			if (this.opts.dialect === 'mysql') {
+				value = value.replace(/\\/g, '\\\\');
+			}
+			if (this.opts.dialect === 'postgres') {
+				upsert = this.entry.insert({ key, value }).onConflict({ columns: ['key', 'value'], update: ['value'] }).where(
+		      this.entry.key.equals(key).and(this.entry.value.equals(serializedOriginalValue))
+		    ).toString();
+			} else {
+				upsert = this.entry.replace({ key, value }).where(
+		      this.entry.key.equals(key).and(this.entry.value.equals(serializedOriginalValue))
+		    ).toString();
+			}
+
+			return this.query(upsert).then(rows => {
+				console.info(rows);
+				const row = rows[0];
+				if (row === undefined && tries > 0) {
+					return setOptimisticly(key, deserialize, serialize, value, expires, ttl, tries);
+				}
+
+				return row.value;
+			});
+		});
 	}
 
 	delete(key) {
